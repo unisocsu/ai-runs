@@ -118,7 +118,7 @@ def main() -> int:
         json.dumps({"messages": messages, "updated_at": now}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    ANSWER_PATH.write_text(answer + "\\n", encoding="utf-8")
+    ANSWER_PATH.write_text(answer + "\n", encoding="utf-8")
     RESULT_PATH.write_text(
         "# Latest AI answer\n\n"
         f"- Generated at: {now}\n"
