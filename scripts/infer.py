@@ -156,12 +156,13 @@ def run_bash(command):
 
     if not isinstance(command, str) or not command.strip() or len(command) > 4000:
         raise ValueError("Command must be a non-empty string of at most 4000 characters.")
-    if "\\x00" in command:
+    if chr(0) in command:
         raise ValueError("Command contains a null byte.")
     WORKSPACE.mkdir(parents=True, exist_ok=True)
     # Only agent_workspace is mounted. No host credentials or repository checkout are passed in.
+    container_name = f"ai-runs-agent-{os.getpid()}"
     docker_command = [
-        "docker", "run", "--rm",
+        "docker", "run", "--rm", "--name", container_name,
         "--network", "bridge",
         "--memory", "2g",
         "--memory-swap", "2g",
@@ -189,6 +190,9 @@ def run_bash(command):
             return {"command": command, "exit_code": process.returncode,
                     "output": output[-12000:]}
         except subprocess.TimeoutExpired:
+            # Stop the container itself before terminating the Docker client.
+            subprocess.run(["docker", "kill", container_name], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=10, check=False)
             os.killpg(process.pid, signal.SIGKILL)
             output, _ = process.communicate()
             return {"command": command, "timed_out": True,
