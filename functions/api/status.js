@@ -35,11 +35,10 @@ export async function onRequestGet({request, env}) {
   const resultResponse = await fetch(`${GH}/repos/${REPO}/contents/latest-answer.txt?ref=main`, {headers});
   if (!resultResponse.ok) return json({status: "completed", conclusion: "failure", error: "ההרצה הסתיימה אך קובץ התשובה לא נמצא."});
   const file = await resultResponse.json();
-  let markdown = "";
-  try { markdown = atob((file.content || "").replace(/\s/g, "")); }
-  catch { return json({status: "completed", conclusion: "failure", error: "לא ניתן לפענח את קובץ התשובה."}); }
-  const marker = "## Answer";
-  const index = markdown.lastIndexOf(marker);
-  const answer = index >= 0 ? markdown.slice(index + marker.length).trim() : markdown.trim();
+  let answer = "";
+  try {
+    const binary = atob((file.content || "").replace(/\s/g, ""));
+    answer = new TextDecoder().decode(Uint8Array.from(binary, character => character.charCodeAt(0))).trim();
+  } catch { return json({status: "completed", conclusion: "failure", error: "לא ניתן לפענח את קובץ התשובה."}); }
   return json({status: "completed", conclusion: "success", run_id: run.id, answer});
 }
