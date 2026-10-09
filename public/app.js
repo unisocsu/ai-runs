@@ -81,7 +81,7 @@ form.addEventListener("submit", async event => {
     if (!response.ok) throw new Error(data.error || "לא ניתן להתחיל הרצה.");
     progressTitle.textContent = "ה-AI חושב";
     progressDetail.textContent = "המודל רץ ב-GitHub Actions. אפשר להמתין כאן.";
-    await pollForAnswer(startedAt, accessKey);
+    await pollForAnswer(data.startedAt || startedAt, accessKey);
   } catch (error) {
     showError(error.message || "אירעה שגיאה בתקשורת.");
     finishBusy();
