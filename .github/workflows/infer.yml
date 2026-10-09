@@ -56,6 +56,14 @@ jobs:
           path: .cache/models
           key: qwen3-8b-q4km-v1-linux
 
+      - name: Report cache result
+        run: |
+          if [ "${{ steps.model-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "MODEL CACHE HIT: model restored from GitHub Actions cache; skipping model download."
+          else
+            echo "MODEL CACHE MISS: no saved model cache found; this run must download the model."
+          fi
+
       - name: Download model if cache is missing
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |
@@ -75,6 +83,15 @@ jobs:
         with:
           path: .cache/models
           key: qwen3-8b-q4km-v1-linux
+
+      - name: Verify model file
+        run: |
+          set -euo pipefail
+          test -s "$MODEL_PATH"
+          echo "Verified model file:"
+          ls -lh "$MODEL_PATH"
+          echo "Disk space:"
+          df -h .
 
       - name: Build llama.cpp
         run: |
