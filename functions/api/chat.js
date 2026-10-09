@@ -33,7 +33,7 @@ export async function onRequestPost({request, env}) {
   const dispatch = await fetch(`${GH}/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ref: "main", inputs: {prompt, max_tokens: maxTokens, reset_history: "false"}})
+    body: JSON.stringify({ref: "main", inputs: {prompt, max_tokens: maxTokens, reset_history: false}})
   });
   if (!dispatch.ok) {
     const detail = (await dispatch.text()).slice(0, 500);
