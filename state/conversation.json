@@ -1,4 +1,17 @@
 {
-  "messages": [],
-  "updated_at": null
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful, careful assistant. Answer in the language used by the user. For coding tasks, give practical, correct solutions and mention uncertainty rather than inventing facts. You are a local open-weight model, not Claude or another hosted service."
+    },
+    {
+      "role": "user",
+      "content": "היי תגיד לי שלום יפה"
+    },
+    {
+      "role": "assistant",
+      "content": "שלום! 😊 אני כאן כדי לעזור לך בכל מה שאתה צריך. איך אני могу לשמש אותך היום?"
+    }
+  ],
+  "updated_at": "2026-10-09T12:16:25+00:00"
 }
