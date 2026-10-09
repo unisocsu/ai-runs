@@ -26,7 +26,7 @@ RESULT_PATH = ROOT / "latest-result.md"
 ANSWER_PATH = ROOT / "latest-answer.txt"
 BASE_URL = os.environ.get("LLAMA_SERVER_URL", "http://127.0.0.1:8080")
 MAX_STEPS = 6
-MAX_FILE_BYTES = 100_000
+MAX_FILE_BYTES = 16_000
 SYSTEM_PROMPT = """You are AI Runs Agent, a practical tool-using assistant.
 Respond in the user's language. You may plan, use tools, inspect results, and then give a final answer.
 Available tools:
@@ -166,7 +166,7 @@ def run_tool(name, args):
         if not target.is_file():
             raise FileNotFoundError("File does not exist in agent_workspace.")
         if target.stat().st_size > MAX_FILE_BYTES:
-            raise ValueError("File exceeds the 100 KB read limit.")
+            raise ValueError("File exceeds the 16 KB read limit.")
         return {"path": target.relative_to(WORKSPACE).as_posix(),
                 "content": target.read_text(encoding="utf-8", errors="replace")}
     if name == "write_file":
