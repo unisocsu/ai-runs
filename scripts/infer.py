@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 STATE_PATH = ROOT / "state" / "conversation.json"
 RESULT_PATH = ROOT / "latest-result.md"
+ANSWER_PATH = ROOT / "latest-answer.txt"
 SYSTEM_PROMPT = (
     "You are a helpful, careful assistant. Answer in the language used by the user. "
     "For coding tasks, give practical, correct solutions and mention uncertainty rather than "
@@ -117,6 +118,7 @@ def main() -> int:
         json.dumps({"messages": messages, "updated_at": now}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    ANSWER_PATH.write_text(answer + "\\n", encoding="utf-8")
     RESULT_PATH.write_text(
         "# Latest AI answer\n\n"
         f"- Generated at: {now}\n"
