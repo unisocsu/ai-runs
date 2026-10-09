@@ -8,7 +8,7 @@ A free-first experiment that runs an open-weight language model on the CPU/RAM o
 - **Runtime:** [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - **Runner:** `ubuntu-latest` (standard hosted runner; RAM is limited and is not configurable here)
 - **Model file:** downloaded from the official [Qwen GGUF repository](https://huggingface.co/Qwen/Qwen3-8B-GGUF)
-- **Model caching:** GitHub Actions cache, when available
+- **Model caching:** disabled; model is downloaded afresh every workflow run
 
 This is a starting point for testing. It will not match Claude Sonnet just because it is allowed to think for longer; quality, context size, and speed depend on the model and runner.
 
@@ -16,7 +16,7 @@ This is a starting point for testing. It will not match Claude Sonnet just becau
 
 A browser chat interface is available in `public/`, with Pages Functions in `functions/api/` that dispatch and poll GitHub Actions. To publish it, follow [CLOUDFLARE-DEPLOY.md](CLOUDFLARE-DEPLOY.md). Cloudflare Pages can assign a free `*.pages.dev` address. You must configure encrypted `GITHUB_TOKEN` and `CHAT_ACCESS_KEY` secrets in Cloudflare Pages before the chat can start runs.
 
-The workflow caches both the multi-gigabyte model and the `llama.cpp` source/build tree. On a cache hit it reuses the compiled `llama-server` binary and skips C++ compilation. GitHub may evict caches or refuse to save them when storage limits are reached, so a rebuild/download can still be needed.
+The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every run. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached, so a cache hit skips C++ compilation. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
 
 ## Run it manually
 
@@ -27,7 +27,7 @@ The workflow caches both the multi-gigabyte model and the `llama.cpp` source/bui
 5. Wait for the run to finish.
 6. Open the run's **Artifacts** section to download `ai-answer`; the latest answer is also committed to `latest-result.md`.
 
-The first run downloads a multi-gigabyte model and compiles llama.cpp, so it can take a while. Later runs should reuse both caches when available. GitHub may evict caches, and cache storage is limited.
+Every run downloads a multi-gigabyte model. The compiled `llama.cpp` build is reused when its cache is available; otherwise it must be rebuilt.
 
 ## Conversation history and privacy
 
@@ -49,10 +49,10 @@ Use **Reset conversation history** in the workflow inputs to start a new convers
 GitHub Actions workflow_dispatch
         |
         v
-Restore/download Qwen3 GGUF model
+Download Qwen3 GGUF model (every run)
         |
         v
-Build llama.cpp -> run llama-server on localhost
+Restore compiled llama.cpp build (or compile if missing) -> run llama-server on localhost
         |
         v
 Send conversation to local OpenAI-compatible endpoint
