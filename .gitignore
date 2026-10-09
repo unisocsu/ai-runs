@@ -1,0 +1,6 @@
+.cache/
+.cache-model/
+third_party/
+*.gguf
+*.log
+__pycache__/
