@@ -113,18 +113,38 @@ def calculate(expression):
     if not isinstance(expression, str) or len(expression) > 200:
         raise ValueError("Expression must be a short arithmetic expression.")
     tree = ast.parse(expression, mode="eval")
-    allowed = (ast.Expression, ast.Constant, ast.BinOp, ast.UnaryOp, ast.Add, ast.Sub,
-               ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow, ast.USub, ast.UAdd)
-    for node in ast.walk(tree):
-        if not isinstance(node, allowed):
-            raise ValueError("Only arithmetic is allowed.")
-        if isinstance(node, ast.Constant) and (not isinstance(node.value, (int, float)) or isinstance(node.value, bool)):
-            raise ValueError("Only numeric constants are allowed.")
-        if isinstance(node, ast.Pow) and isinstance(node, ast.Constant) and abs(node.value) > 100:
-            raise ValueError("Exponent is too large.")
-    result = eval(compile(tree, "<calculator>", "eval"), {"__builtins__": {}}, {})
-    if isinstance(result, complex) or abs(result) > 10**100:
-        raise ValueError("Result is outside the supported range.")
+    def evaluate(node):
+        if isinstance(node, ast.Expression):
+            return evaluate(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+            value = node.value
+        elif isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+            operand = evaluate(node.operand)
+            value = -operand if isinstance(node.op, ast.USub) else operand
+        elif isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow)):
+            left, right = evaluate(node.left), evaluate(node.right)
+            if isinstance(node.op, ast.Pow):
+                if abs(right) > 20:
+                    raise ValueError("Exponent magnitude must be 20 or less.")
+                value = left ** right
+            elif isinstance(node.op, ast.Add):
+                value = left + right
+            elif isinstance(node.op, ast.Sub):
+                value = left - right
+            elif isinstance(node.op, ast.Mult):
+                value = left * right
+            elif isinstance(node.op, ast.Div):
+                value = left / right
+            elif isinstance(node.op, ast.FloorDiv):
+                value = left // right
+            else:
+                value = left % right
+        else:
+            raise ValueError("Only basic arithmetic is allowed.")
+        if isinstance(value, complex) or not isinstance(value, (int, float)) or abs(value) > 10**100:
+            raise ValueError("Result is outside the supported range.")
+        return value
+    result = evaluate(tree)
     return {"expression": expression, "result": result}
 
 def run_tool(name, args):
@@ -273,7 +293,7 @@ def main():
         answer = "הסוכן לא הצליח להפיק תשובה סופית במסגרת מגבלת הצעדים. נסה לנסח את המשימה באופן ממוקד יותר."
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps({"messages": messages[-18:], "updated_at": now},
+    STATE_PATH.write_text(json.dumps({"messages": [messages[0], *messages[1:][-16:]], "updated_at": now},
                                      ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     ANSWER_PATH.write_text(answer + "\n", encoding="utf-8")
     RESULT_PATH.write_text(
