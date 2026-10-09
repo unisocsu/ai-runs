@@ -126,7 +126,7 @@ function addMessage(role, text) {
   body.className = "message-body";
   const label = document.createElement("div");
   label.className = "message-label";
-  label.textContent = role === "user" ? "אתה" : "AI Runs · Qwen3-8B";
+  label.textContent = role === "user" ? "אתה" : "AI Runs Agent · Qwen3-8B";
   const content = document.createElement("div");
   content.className = "message-text";
   content.textContent = text;
