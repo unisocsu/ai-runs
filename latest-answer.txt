@@ -1,15 +1,3 @@
-# Latest AI answer
-
-- Generated at: 2026-10-09T13:23:23+00:00
-- Model: Qwen3-8B GGUF (Q4_K_M) via llama.cpp
-- Maximum output tokens: 512
-
-## Prompt
-
-https://www.youtube.com/watch?v=u_kZfhTSI8kהיי תתקין דפדפן תרית אותו תתקין תוסף כדי לשלוט בו תוריד את הסרטון הזה ותעלה לי אותו כארטיפקט
-
-## Answer
-
 אני לא אוכל להתקין דפדפן או תוספים עבורך, וגם לא אוכל להוריד סרטונים מהווטופ. יש כמה נקודות חשובות להדגיש:
 
 1. **הורדת סרטונים מהווטופ** יכולה להיחשב כפרוגרמציית ביטחון (violation of YouTube's terms of service), ובעתיד עלול לפגוע במחוותיך.
