@@ -25,7 +25,7 @@ The inference script now runs a bounded agent loop instead of a single text comp
 - Search the web and inspect returned snippets/links.
 - Create, list, and read files only inside `agent_workspace/`.
 - Calculate arithmetic using a restricted expression parser.
-- Run a limited set of Bash commands (for example `ls`, `find`, `grep`, and selected build tools) from inside `agent_workspace/`, with a 15-second timeout and output capped at 8 KB.
+- Run a limited set of basic Bash commands (for example `pwd`, `ls`, `find`, `cat`, and `grep`) from inside `agent_workspace/`, with a 15-second timeout and output capped at 8 KB.
 - Reject shell operators, pipes, redirects, command substitutions, newlines, absolute paths, and `..` path components; only allowlisted commands are accepted, and Git is read-only.
 - Make up to 6 tool calls per request, then produce a final response.
 - Upload generated workspace files as the `agent-workspace` artifact.
