@@ -157,7 +157,7 @@ def run_bash(command):
     if not isinstance(command, str) or not command.strip() or len(command) > 500:
         raise ValueError("Command must be a non-empty string of at most 500 characters.")
     # This intentionally accepts one command, not arbitrary shell programs.
-    if re.search(r"[;&|<>\x60$(){}\\n\\r]", command):
+    if re.search(r"[;&|<>\\x60$(){}\n\r]", command):
         raise ValueError("Only one simple command is allowed; shell operators, substitutions, and redirection are disabled.")
     try:
         parts = shlex.split(command, posix=True)
