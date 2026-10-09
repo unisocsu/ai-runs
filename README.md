@@ -25,12 +25,14 @@ The inference script now runs a bounded agent loop instead of a single text comp
 - Search the web and inspect returned snippets/links.
 - Create, list, and read files only inside `agent_workspace/`.
 - Calculate arithmetic using a restricted expression parser.
-- Run a limited set of basic Bash commands (for example `pwd`, `ls`, `find`, `cat`, and `grep`) from inside `agent_workspace/`, with a 15-second timeout and output capped at 8 KB.
-- Reject shell operators, pipes, redirects, command substitutions, newlines, absolute paths, and `..` path components; only allowlisted commands are accepted, and Git is read-only.
+- Run Bash commands in a disposable Ubuntu Docker container, including shell pipelines, scripts, downloads, package installation, compilation, and tests.
+- The container has internet access and only `agent_workspace/` mounted from the runner. Its filesystem is discarded after each command; the mounted workspace persists and is uploaded as the `agent-workspace` artifact.
+- Each Bash call has a 180-second timeout, 2 GB memory limit, 2 CPU limit, 256-process limit, and output capped at 12 KB.
+- Keep GitHub write credentials out of the agent environment; the workflow only exposes its token to the final fixed commit/push step.
 - Make up to 6 tool calls per request, then produce a final response.
 - Upload generated workspace files as the `agent-workspace` artifact.
 
-The Bash tool is deliberately constrained and is **not** a general-purpose unrestricted shell. It does not install packages or deploy code automatically. The runner is temporary, but command execution still carries risk; do not put secrets or private data in prompts or workspace files. Prompts, answers, and the saved conversation remain publicly visible in this public repository. Search results and webpages are untrusted data. This is a first agent iteration, not an unlimited or always-on agent.
+This is a much more capable shell, but not literally unlimited: each command has resource limits, the runner is temporary, and the agent still has a finite number of tool calls. Container commands have internet access, so only run tasks you trust. Prompts, answers, and the saved conversation remain publicly visible in this public repository. Never put secrets or private data in prompts or workspace files. Search results and downloaded files are untrusted data.
 
 ## Run it manually
 
