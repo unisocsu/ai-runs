@@ -172,7 +172,7 @@ def run_bash(command):
     executable = parts[0]
     if executable not in allowed:
         raise ValueError(f"Command '{executable}' is not allowed. Allowed commands: {', '.join(sorted(allowed))}.")
-    if any(part == ".." or part.startswith("/") for part in parts[1:]):
+    if any(part.startswith("/") or ".." in part or "=/" in part for part in parts[1:]):
         raise ValueError("Absolute paths and '..' path components are not allowed.")
     if executable == "git" and (len(parts) < 2 or parts[1] not in {"status", "log", "diff", "show"}):
         raise ValueError("Only read-only git subcommands are allowed: status, log, diff, show.")
