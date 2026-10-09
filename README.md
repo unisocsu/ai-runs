@@ -27,7 +27,7 @@ The inference script now runs a bounded agent loop instead of a single text comp
 - Calculate arithmetic using a restricted expression parser.
 - Run Bash commands in a disposable Ubuntu Docker container, including shell pipelines, scripts, downloads, package installation, compilation, and tests.
 - The container has internet access and only `agent_workspace/` mounted from the runner. Its filesystem is discarded after each command; the mounted workspace persists and is uploaded as the `agent-workspace` artifact.
-- Each Bash call has a 180-second timeout, 2 GB memory limit, 2 CPU limit, 256-process limit, and output capped at 12 KB.
+- Each Bash call has a 180-second timeout, 1 GB memory limit, 2 CPU limit, 256-process limit, and output capped at 12 KB.
 - Keep GitHub write credentials out of the agent environment; the workflow only exposes its token to the final fixed commit/push step.
 - Make up to 6 tool calls per request, then produce a final response.
 - Upload generated workspace files as the `agent-workspace` artifact.
