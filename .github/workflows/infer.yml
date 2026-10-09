@@ -130,6 +130,15 @@ jobs:
       - name: Generate answer
         run: python3 scripts/infer.py
 
+      - name: Upload agent workspace artifact
+        if: always() && hashFiles('agent_workspace/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-workspace
+          path: agent_workspace/
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload answer artifact
         if: always() && hashFiles('latest-result.md') != ''
         uses: actions/upload-artifact@v4
