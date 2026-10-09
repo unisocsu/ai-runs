@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131c">
+  <meta name="description" content="צ'אט AI ניסיוני המבוסס על מודל פתוח ו-llama.cpp">
+  <title>AI Runs — צ'אט מקומי</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">✳</span><div><strong>AI Runs</strong><small>OPEN MODEL · EXPERIMENTAL</small></div></div>
+      <button id="new-chat" class="new-chat"><span>＋</span> שיחה חדשה</button>
+      <div class="side-note"><span class="dot"></span><span>Qwen3-8B · llama.cpp</span></div>
+      <div class="side-bottom">
+        <div class="notice-icon">ⓘ</div>
+        <p>הצ'אט רץ דרך GitHub Actions. תשובות עשויות לקחת כמה דקות ואף יותר.</p>
+        <a href="https://github.com/unisocsu/ai-runs/actions/workflows/infer.yml" target="_blank" rel="noreferrer">צפייה בהרצות ↗</a>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">✳</span><strong>AI Runs</strong></div>
+        <div class="model-chip"><span class="dot"></span> Qwen3-8B <span class="chip-muted">· CPU</span></div>
+        <button id="settings-toggle" class="icon-button" title="הגדרות גישה" aria-label="הגדרות גישה">⚙</button>
+      </header>
+      <section id="settings" class="settings hidden">
+        <label for="access-key">מפתח גישה לאתר</label>
+        <div class="key-row"><input id="access-key" type="password" autocomplete="off" placeholder="הזן את המפתח שסיפקת ב-Cloudflare"><button id="save-key">שמירה</button></div>
+        <small>המפתח נשמר רק בלשונית הנוכחית. מנהל האתר צריך להגדיר את אותו ערך כ-CHAT_ACCESS_KEY ב-Cloudflare Pages.</small>
+      </section>
+      <section id="welcome" class="welcome">
+        <div class="hero-symbol">✳</div>
+        <p class="eyebrow">YOUR EXPERIMENTAL AI</p>
+        <h1>במה נתחיל?</h1>
+        <p class="subtitle">צ'אט מבוסס Qwen3-8B שרץ על CPU באמצעות llama.cpp.</p>
+        <div class="suggestions">
+          <button class="suggestion" data-prompt="הסבר לי רעיון מורכב בצורה פשוטה"><span>✧</span><strong>להבין רעיון</strong><small>הסבר ברור, שלב אחר שלב</small></button>
+          <button class="suggestion" data-prompt="כתוב לי סקריפט Python שימושי והסבר איך הוא עובד"><span>⌘</span><strong>לכתוב קוד</strong><small>תכנון, קוד ותיקון שגיאות</small></button>
+          <button class="suggestion" data-prompt="עזור לי לחשוב על רעיון לפרויקט תוכנה קטן"><span>↗</span><strong>לפתח רעיון</strong><small>רעיונות לפרויקט הבא</small></button>
+        </div>
+      </section>
+      <section id="messages" class="messages hidden" aria-live="polite"></section>
+      <div id="progress" class="progress hidden"><span class="spinner"></span><div><strong id="progress-title">הבקשה נשלחה</strong><small id="progress-detail">ממתין ל-GitHub Actions…</small></div><span id="elapsed" class="elapsed">0:00</span></div>
+      <div class="composer-wrap">
+        <form id="chat-form" class="composer">
+          <textarea id="prompt" rows="1" maxlength="20000" placeholder="כתוב הודעה ל-AI…" aria-label="הודעה ל-AI" required></textarea>
+          <div class="composer-bottom"><span class="composer-hint">Enter לשליחה · Shift+Enter לשורה חדשה</span><div class="composer-actions"><select id="max-tokens" aria-label="אורך תשובה"><option value="256">קצרה</option><option value="512" selected>רגילה</option><option value="1024">ארוכה</option></select><button id="send" type="submit" class="send-button" aria-label="שליחה">↑</button></div></div>
+        </form>
+        <p class="footnote">מודל ניסיוני · ההרצה יכולה להיות איטית. אל תשלח מידע סודי: ההודעות והתשובות נשמרות בריפו ציבורי.</p>
+        <div id="error" class="error hidden" role="alert"></div>
+      </div>
+    </main>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
