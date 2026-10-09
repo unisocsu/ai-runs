@@ -67,9 +67,13 @@ Download Qwen3 GGUF model (every run)
 Restore compiled llama.cpp build (or compile if missing) -> run llama-server on localhost
         |
         v
-Send conversation to local OpenAI-compatible endpoint
+Run bounded agent loop (up to 6 tool calls)
         |
-        +--> upload ai-answer artifact
+        +--> web search
+        +--> list/read/write files in agent_workspace/
+        +--> restricted arithmetic calculator
+        |
+        +--> upload agent-workspace and ai-answer artifacts
         +--> commit state/conversation.json and latest-result.md
 ```
 
