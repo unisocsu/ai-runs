@@ -83,7 +83,7 @@ jobs:
           if [ "${{ steps.cpp-cache.outputs.cache-hit }}" = "true" ] && [ -x .cache/llama.cpp-build/bin/llama-server ]; then
             echo "LLAMA.CPP BUILD CACHE HIT: compiled llama-server restored; compilation skipped."
           else
-            echo "LLAMA.CPP BUILD CACHE MISS/INVALID: source/build must be prepared."
+            echo "LLAMA.CPP BUILD CACHE MISS/INVALID: build must be prepared."
           fi
 
       - name: Get llama.cpp source
@@ -112,7 +112,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .cache/llama.cpp-build
-          key: llama-cpp-server-ubuntu-x64-v1
+          key: llama-cpp-build-only-ubuntu-x64-v2
 
       - name: Start local model server
         run: |
