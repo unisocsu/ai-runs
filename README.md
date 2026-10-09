@@ -18,6 +18,18 @@ A browser chat interface is available in `public/`, with Pages Functions in `fun
 
 The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every run. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached, so a cache hit skips C++ compilation. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
 
+## Agent tools (first version)
+
+The inference script now runs a bounded agent loop instead of a single text completion. It can:
+
+- Search the web and inspect returned snippets/links.
+- Create, list, and read files only inside `agent_workspace/`.
+- Calculate arithmetic using a restricted expression parser.
+- Make up to 6 tool calls per request, then produce a final response.
+- Upload generated workspace files as the `agent-workspace` artifact.
+
+For safety, this version does **not** execute arbitrary shell commands, install packages, or deploy code automatically. Generated files are available as an artifact; prompts, answers, and the saved conversation remain publicly visible in this public repository. Search results and webpages are untrusted data. This is a first agent iteration, not an unlimited or always-on agent.
+
 ## Run it manually
 
 1. Open the repository's **Actions** tab.
