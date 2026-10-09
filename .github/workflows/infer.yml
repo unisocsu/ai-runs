@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up system dependencies
         run: |
@@ -157,6 +159,8 @@ jobs:
 
       - name: Commit saved conversation and latest answer
         if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -166,5 +170,5 @@ jobs:
             echo "No state changes to commit."
           else
             git commit -m "Save AI conversation result"
-            git push
+            git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" push
           fi
