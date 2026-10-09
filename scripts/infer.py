@@ -167,9 +167,7 @@ def run_bash(command):
         raise ValueError("Command is empty.")
     allowed = {
         "pwd", "ls", "find", "cat", "head", "tail", "grep", "wc", "sort",
-        "uniq", "cut", "tr", "file", "du", "stat", "date", "printf",
-        "cmake", "make", "gcc", "g++", "javac", "java", "node", "npm",
-        "pytest", "git"
+        "uniq", "cut", "tr", "file", "du", "stat", "date", "printf", "git"
     }
     executable = parts[0]
     if executable not in allowed:
