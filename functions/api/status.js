@@ -32,7 +32,7 @@ export async function onRequestGet({request, env}) {
   if (run.status !== "completed") return json({status: run.status || "queued", run_id: run.id});
 
   if (run.conclusion !== "success") return json({status: "completed", conclusion: run.conclusion, run_id: run.id});
-  const resultResponse = await fetch(`${GH}/repos/${REPO}/contents/latest-result.md?ref=main`, {headers});
+  const resultResponse = await fetch(`${GH}/repos/${REPO}/contents/latest-answer.txt?ref=main`, {headers});
   if (!resultResponse.ok) return json({status: "completed", conclusion: "failure", error: "ההרצה הסתיימה אך קובץ התשובה לא נמצא."});
   const file = await resultResponse.json();
   let markdown = "";
