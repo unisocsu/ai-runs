@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   inference:
-    name: Run Qwen3 with cached model and llama.cpp build
+    name: Run Qwen3 with cached llama.cpp compilation
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
@@ -76,7 +76,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .cache/llama.cpp-build
-          key: llama-cpp-server-ubuntu-x64-v1
+          key: llama-cpp-build-only-ubuntu-x64-v2
 
       - name: Report C++ build cache result
         run: |
@@ -107,7 +107,7 @@ jobs:
           test -x .cache/llama.cpp-build/bin/llama-server
           ls -lh .cache/llama.cpp-build/bin/llama-server
 
-      - name: Save llama.cpp source and build to Actions cache
+      - name: Save compiled llama.cpp build to Actions cache
         if: steps.cpp-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
