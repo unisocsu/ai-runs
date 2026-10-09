@@ -12,7 +12,13 @@ A free-first experiment that runs an open-weight language model on the CPU/RAM o
 
 This is a starting point for testing. It will not match Claude Sonnet just because it is allowed to think for longer; quality, context size, and speed depend on the model and runner.
 
-## Run it
+## Website chat on Cloudflare Pages
+
+A browser chat interface is available in `public/`, with Pages Functions in `functions/api/` that dispatch and poll GitHub Actions. To publish it, follow [CLOUDFLARE-DEPLOY.md](CLOUDFLARE-DEPLOY.md). Cloudflare Pages can assign a free `*.pages.dev` address. You must configure encrypted `GITHUB_TOKEN` and `CHAT_ACCESS_KEY` secrets in Cloudflare Pages before the chat can start runs.
+
+The workflow caches both the multi-gigabyte model and the `llama.cpp` source/build tree. On a cache hit it reuses the compiled `llama-server` binary and skips C++ compilation. GitHub may evict caches or refuse to save them when storage limits are reached, so a rebuild/download can still be needed.
+
+## Run it manually
 
 1. Open the repository's **Actions** tab.
 2. Select **Run local AI**.
@@ -21,7 +27,7 @@ This is a starting point for testing. It will not match Claude Sonnet just becau
 5. Wait for the run to finish.
 6. Open the run's **Artifacts** section to download `ai-answer`; the latest answer is also committed to `latest-result.md`.
 
-The first run downloads a multi-gigabyte model and compiles llama.cpp, so it can take a while. Later runs may reuse the cached model. GitHub may evict caches, and cache storage is limited; the workflow still attempts to download the model when the cache is missing.
+The first run downloads a multi-gigabyte model and compiles llama.cpp, so it can take a while. Later runs should reuse both caches when available. GitHub may evict caches, and cache storage is limited.
 
 ## Conversation history and privacy
 
