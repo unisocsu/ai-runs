@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   inference:
-    name: Download model and generate answer
+    name: Run Qwen3 with cached model and llama.cpp build
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
@@ -56,12 +56,12 @@ jobs:
           path: .cache/models
           key: qwen3-8b-q4km-v1-linux
 
-      - name: Report cache result
+      - name: Report model cache result
         run: |
           if [ "${{ steps.model-cache.outputs.cache-hit }}" = "true" ]; then
-            echo "MODEL CACHE HIT: model restored from GitHub Actions cache; skipping model download."
+            echo "MODEL CACHE HIT: restored model; download skipped."
           else
-            echo "MODEL CACHE MISS: no saved model cache found; this run must download the model."
+            echo "MODEL CACHE MISS: model must be downloaded this run."
           fi
 
       - name: Download model if cache is missing
@@ -88,25 +88,58 @@ jobs:
         run: |
           set -euo pipefail
           test -s "$MODEL_PATH"
-          echo "Verified model file:"
           ls -lh "$MODEL_PATH"
-          echo "Disk space:"
           df -h .
 
-      - name: Build llama.cpp
+      # Cache both the llama.cpp source tree and compiled build directory.
+      # The stable key intentionally reuses this exact build until manually bumped.
+      - name: Restore cached llama.cpp source and compilation
+        id: cpp-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/llama.cpp
+          key: llama-cpp-server-ubuntu-x64-v1
+
+      - name: Report C++ build cache result
+        run: |
+          if [ "${{ steps.cpp-cache.outputs.cache-hit }}" = "true" ] && [ -x .cache/llama.cpp/build/bin/llama-server ]; then
+            echo "LLAMA.CPP BUILD CACHE HIT: source and compiled llama-server restored; compilation skipped."
+          else
+            echo "LLAMA.CPP BUILD CACHE MISS/INVALID: source/build must be prepared."
+          fi
+
+      - name: Clone llama.cpp if cache is missing
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
+          mkdir -p .cache
           git clone --depth 1 https://github.com/ggml-org/llama.cpp.git .cache/llama.cpp
-          cmake -S .cache/llama.cpp -B .cache/llama.cpp/build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DGGML_NATIVE=ON \
-            -DLLAMA_CURL=OFF
-          cmake --build .cache/llama.cpp/build --config Release --target llama-server -j 4
+
+      - name: Compile llama-server if not cached
+        run: |
+          set -euo pipefail
+          if [ ! -x .cache/llama.cpp/build/bin/llama-server ]; then
+            cmake -S .cache/llama.cpp -B .cache/llama.cpp/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DGGML_NATIVE=ON \
+              -DLLAMA_CURL=OFF
+            cmake --build .cache/llama.cpp/build --config Release --target llama-server -j 4
+          else
+            echo "Using cached llama-server binary; no C++ compilation needed."
+          fi
+          test -x .cache/llama.cpp/build/bin/llama-server
+          ls -lh .cache/llama.cpp/build/bin/llama-server
+
+      - name: Save llama.cpp source and build to Actions cache
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/llama.cpp
+          key: llama-cpp-server-ubuntu-x64-v1
 
       - name: Start local model server
         run: |
           set -euo pipefail
-          test -x .cache/llama.cpp/build/bin/llama-server
           nohup .cache/llama.cpp/build/bin/llama-server \
             --model "$MODEL_PATH" \
             --host 127.0.0.1 \
