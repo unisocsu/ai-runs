@@ -1,4 +1,4 @@
-name: Run local AI
+name: Task Dispatch — Run local AI
 
 on:
   workflow_dispatch:
