@@ -16,6 +16,15 @@ The repository root contains `functions/api/`; Cloudflare Pages Functions are de
 
 ## 2. Configure API secrets
 
+To let the GitHub Actions deployment workflow publish the site automatically, also add these **repository Actions secrets** in GitHub → Settings → Secrets and variables → Actions:
+
+- `CLOUDFLARE_API_TOKEN`: Cloudflare API token with permission to deploy Pages projects.
+- `CLOUDFLARE_ACCOUNT_ID`: your Cloudflare account ID.
+
+Then open **Actions → Deploy AI Runs Chat Website → Run workflow** and set `deploy_to_cloudflare` to `true`. If you leave it `false`, the workflow only packages the site as a downloadable artifact.
+
+
+
 In the Pages project, open **Settings → Variables and Secrets** and add these as encrypted secrets for Production (and Preview only if needed):
 
 - `GITHUB_TOKEN`: a GitHub fine-grained personal access token scoped only to `unisocsu/ai-runs`, with **Actions: Read and write** and **Contents: Read-only**.
