@@ -1,0 +1,60 @@
+name: Deploy AI Runs Chat Website
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_to_cloudflare:
+        description: "Publish to Cloudflare Pages (requires repository secrets)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Validate and package the chat website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate website and API files
+        run: |
+          set -eu
+          test -s public/index.html
+          test -s public/style.css
+          test -s public/app.js
+          test -s functions/api/chat.js
+          test -s functions/api/status.js
+          mkdir -p .site-package
+          cp -R public/. .site-package/
+          cp -R functions .site-package/functions
+          cp CLOUDFLARE-DEPLOY.md .site-package/README-DEPLOY.md
+          (cd .site-package && zip -qr ../ai-runs-chat-site.zip .)
+          echo "Website and API files validated and packaged."
+
+      - name: Upload complete chat website
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-runs-chat-website
+          path: ai-runs-chat-site.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Deploy to Cloudflare Pages
+        if: inputs.deploy_to_cloudflare == true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy public --project-name=ai-runs-chat --branch=main
+
+      - name: Explain missing deployment secrets
+        if: inputs.deploy_to_cloudflare == true && (secrets.CLOUDFLARE_API_TOKEN == '' || secrets.CLOUDFLARE_ACCOUNT_ID == '')
+        run: |
+          echo "The website ZIP was created, but Cloudflare deployment requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets."
+          exit 1
