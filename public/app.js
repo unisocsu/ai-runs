@@ -1,155 +1,25 @@
-const form = document.querySelector("#chat-form");
-const promptInput = document.querySelector("#prompt");
-const messages = document.querySelector("#messages");
-const welcome = document.querySelector("#welcome");
-const progress = document.querySelector("#progress");
-const progressTitle = document.querySelector("#progress-title");
-const progressDetail = document.querySelector("#progress-detail");
-const elapsedLabel = document.querySelector("#elapsed");
-const errorBox = document.querySelector("#error");
-const sendButton = document.querySelector("#send");
-const settings = document.querySelector("#settings");
-const keyInput = document.querySelector("#access-key");
-let busy = false;
-let elapsedTimer = null;
-let pollTimer = null;
-let currentChat = [];
-
-keyInput.value = sessionStorage.getItem("ai-runs-access-key") || "";
-document.querySelector("#settings-toggle").addEventListener("click", () => settings.classList.toggle("hidden"));
-document.querySelector("#save-key").addEventListener("click", () => {
-  sessionStorage.setItem("ai-runs-access-key", keyInput.value.trim());
-  settings.classList.add("hidden");
-  showError("");
-});
-document.querySelector("#new-chat").addEventListener("click", () => {
-  if (busy) return;
-  currentChat = [];
-  messages.replaceChildren();
-  messages.classList.add("hidden");
-  welcome.classList.remove("hidden");
-  showError("");
-});
-document.querySelectorAll(".suggestion").forEach(button => button.addEventListener("click", () => {
-  promptInput.value = button.dataset.prompt || "";
-  promptInput.focus();
-  autoGrow();
-}));
-promptInput.addEventListener("input", autoGrow);
-promptInput.addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    form.requestSubmit();
-  }
-});
-form.addEventListener("submit", async event => {
-  event.preventDefault();
-  const prompt = promptInput.value.trim();
-  if (!prompt || busy) return;
-  const accessKey = sessionStorage.getItem("ai-runs-access-key") || "";
-  if (!accessKey) {
-    settings.classList.remove("hidden");
-    showError("צריך להזין מפתח גישה. אם אין לך מפתח, פנה למנהל האתר.");
-    keyInput.focus();
-    return;
-  }
-  showError("");
-  busy = true;
-  sendButton.disabled = true;
-  promptInput.disabled = true;
-  welcome.classList.add("hidden");
-  messages.classList.remove("hidden");
-  addMessage("user", prompt);
-  promptInput.value = "";
-  autoGrow();
-  const startedAt = new Date().toISOString();
-  progress.classList.remove("hidden");
-  progressTitle.textContent = "הבקשה נשלחה";
-  progressDetail.textContent = "מאתר את הרצת GitHub Actions…";
-  const startMs = Date.now();
-  elapsedTimer = setInterval(() => {
-    const sec = Math.floor((Date.now() - startMs) / 1000);
-    elapsedLabel.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
-  }, 1000);
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({prompt, max_tokens: Number(document.querySelector("#max-tokens").value), startedAt, accessKey})
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "לא ניתן להתחיל הרצה.");
-    progressTitle.textContent = "ה-AI חושב";
-    progressDetail.textContent = "המודל רץ ב-GitHub Actions. אפשר להמתין כאן.";
-    await pollForAnswer(data.startedAt || startedAt, accessKey);
-  } catch (error) {
-    showError(error.message || "אירעה שגיאה בתקשורת.");
-    finishBusy();
-  }
-});
-async function pollForAnswer(startedAt, accessKey) {
-  let failures = 0;
-  while (busy) {
-    await new Promise(resolve => setTimeout(resolve, 7000));
-    if (!busy) break;
-    try {
-      const url = "/api/status?since=" + encodeURIComponent(startedAt);
-      const response = await fetch(url, {headers: {"X-Chat-Key": accessKey}});
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "שגיאה בבדיקת מצב ההרצה.");
-      failures = 0;
-      if (data.status === "queued" || data.status === "in_progress" || data.status === "dispatching") {
-        progressTitle.textContent = data.status === "queued" ? "בתור להרצה" : "ה-AI חושב";
-        progressDetail.textContent = data.status === "queued" ? "GitHub Actions יריץ את הבקשה כשהמשימה תתפנה." : "המודל מייצר תשובה. בהרצה הראשונה זה עלול לקחת זמן רב.";
-        continue;
-      }
-      if (data.status === "completed" && data.conclusion === "success") {
-        addMessage("assistant", data.answer || "ההרצה הסתיימה, אך לא נמצאה תשובה.");
-        finishBusy();
-        return;
-      }
-      if (data.status === "completed") throw new Error("הרצת ה-AI נכשלה. אפשר לבדוק את הלוגים בקישור GitHub Actions שבצד.");
-    } catch (error) {
-      failures++;
-      if (failures >= 5) throw error;
-      progressDetail.textContent = "החיבור מתעכב; מנסה שוב…";
-    }
-  }
-}
-function addMessage(role, text) {
-  const item = document.createElement("article");
-  item.className = "message " + (role === "user" ? "user" : "assistant");
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.textContent = role === "user" ? "●" : "✳";
-  const body = document.createElement("div");
-  body.className = "message-body";
-  const label = document.createElement("div");
-  label.className = "message-label";
-  label.textContent = role === "user" ? "אתה" : "AI Runs Agent · Qwen3-8B";
-  const content = document.createElement("div");
-  content.className = "message-text";
-  content.textContent = text;
-  body.append(label, content);
-  item.append(avatar, body);
-  messages.append(item);
-  item.scrollIntoView({behavior: "smooth", block: "start"});
-  currentChat.push({role, text});
-}
-function finishBusy() {
-  busy = false;
-  sendButton.disabled = false;
-  promptInput.disabled = false;
-  progress.classList.add("hidden");
-  clearInterval(elapsedTimer);
-  pollTimer && clearTimeout(pollTimer);
-  promptInput.focus();
-}
-function showError(text) {
-  errorBox.textContent = text;
-  errorBox.classList.toggle("hidden", !text);
-}
-function autoGrow() {
-  promptInput.style.height = "auto";
-  promptInput.style.height = Math.min(promptInput.scrollHeight, 180) + "px";
-}
+(function () {
+  'use strict';
+  function id(s) { return document.getElementById(s); }
+  function has(el,c) { return (' '+el.className+' ').indexOf(' '+c+' ')>=0; }
+  function add(el,c) { if(!has(el,c)) el.className+=(el.className?' ':'')+c; }
+  function remove(el,c) { el.className=(' '+el.className+' ').replace(' '+c+' ',' ').replace(/^\s+|\s+$/g,''); }
+  function toggle(el,c) { if(has(el,c)) remove(el,c); else add(el,c); }
+  function json(s) { try { return JSON.parse(s||'{}'); } catch(e) { return {}; } }
+  var form=id('chat-form'), input=id('prompt'), messages=id('messages'), welcome=id('welcome'), progress=id('progress'), err=id('error'), settings=id('settings'), key=id('access-key'), send=id('send'), busy=false, timer=null, access='';
+  try { access=sessionStorage.getItem('ai-runs-access-key')||''; } catch(e) {} key.value=access;
+  id('settings-toggle').onclick=function(){toggle(settings,'hidden');};
+  id('save-key').onclick=function(){access=key.value.replace(/^\s+|\s+$/g,'');try{sessionStorage.setItem('ai-runs-access-key',access);}catch(e){}remove(settings,'hidden');add(settings,'hidden');showError('');};
+  id('new-chat').onclick=function(){if(busy)return;while(messages.firstChild)messages.removeChild(messages.firstChild);add(messages,'hidden');remove(welcome,'hidden');showError('');};
+  var suggestions=document.querySelectorAll('.suggestion'),i;
+  for(i=0;i<suggestions.length;i++){suggestions[i].onclick=function(){input.value=this.getAttribute('data-prompt')||'';input.focus();};}
+  input.onkeydown=function(e){e=e||window.event;if((e.key==='Enter'||e.keyCode===13)&&!e.shiftKey){if(e.preventDefault)e.preventDefault();else e.returnValue=false;if(form.requestSubmit)form.requestSubmit();else submit();}};
+  form.onsubmit=function(e){e=e||window.event;if(e.preventDefault)e.preventDefault();submit();return false;};
+  function submit(){var p=input.value.replace(/^\s+|\s+$/g,'');if(!p||busy)return;access=key.value.replace(/^\s+|\s+$/g,'')||access;if(!access){remove(settings,'hidden');showError('צריך להזין מפתח גישה. אם אין לך מפתח, פנה למנהל האתר.');key.focus();return;}busy=true;send.disabled=true;input.disabled=true;remove(messages,'hidden');add(welcome,'hidden');showError('');message('user',p);input.value='';var started=new Date().getTime(),since=new Date(started).toISOString();remove(progress,'hidden');id('progress-title').innerHTML='הבקשה נשלחה';id('progress-detail').innerHTML='ממתין להרצת GitHub Actions…';timer=window.setInterval(function(){var s=Math.floor((new Date().getTime()-started)/1000);id('elapsed').innerHTML=Math.floor(s/60)+':'+('0'+s%60).slice(-2);},1000);
+    request('POST','/api/chat',{prompt:p,max_tokens:Number(id('max-tokens').value),accessKey:access},function(status,data){if(status<200||status>=300){showError(data.error||'לא ניתן להתחיל הרצה.');finish();return;}since=data.startedAt||since;id('progress-title').innerHTML='ה-AI חושב';id('progress-detail').innerHTML='המודל רץ ב-GitHub Actions; התשובה עשויה לקחת כמה דקות.';poll(since,0);});}
+  function poll(since,failures){if(!busy)return;window.setTimeout(function(){if(!busy)return;request('GET','/api/status?since='+encodeURIComponent(since),null,function(status,data){if(status<200||status>=300){if(failures>=4){showError(data.error||'לא ניתן לבדוק את מצב ההרצה.');finish();}else{ id('progress-detail').innerHTML='החיבור מתעכב; מנסה שוב…';poll(since,failures+1);}return;}if(data.status==='completed'&&data.conclusion==='success'){message('assistant',data.answer||'ההרצה הסתיימה אך לא נמצאה תשובה.');finish();return;}if(data.status==='completed'){showError(data.error||'הרצת ה-AI נכשלה. בדוק את הלוגים ב-GitHub Actions.');finish();return;}id('progress-title').innerHTML=data.status==='queued'?'בתור להרצה':'ה-AI חושב';id('progress-detail').innerHTML=data.status==='queued'?'המשימה ממתינה לתור ב-GitHub Actions.':'המודל מייצר תשובה. בהרצה הראשונה זה עלול לקחת זמן.';poll(since,0);},true);},7000);}
+  function request(method,url,body,done,isStatus){var x=new XMLHttpRequest();x.open(method,url,true);x.setRequestHeader('Content-Type','application/json');if(isStatus)x.setRequestHeader('X-Chat-Key',access);x.onreadystatechange=function(){if(x.readyState===4)done(x.status,json(x.responseText));};x.onerror=function(){done(0,{error:'שגיאת תקשורת. בדוק את החיבור ונסה שוב.'});};x.send(body?JSON.stringify(body):null);}
+  function message(role,text){var item=document.createElement('article');item.className='message '+role;var avatar=document.createElement('div');avatar.className='avatar';avatar.appendChild(document.createTextNode(role==='user'?'●':'✳'));var body=document.createElement('div');body.className='message-body';var label=document.createElement('div');label.className='message-label';label.appendChild(document.createTextNode(role==='user'?'אתה':'AI Runs Agent · Qwen3-8B'));var content=document.createElement('div');content.className='message-text';content.appendChild(document.createTextNode(text));body.appendChild(label);body.appendChild(content);item.appendChild(avatar);item.appendChild(body);messages.appendChild(item);if(item.scrollIntoView)item.scrollIntoView(false);}
+  function finish(){busy=false;send.disabled=false;input.disabled=false;add(progress,'hidden');if(timer)window.clearInterval(timer);input.focus();}
+  function showError(t){err.innerHTML='';if(t)err.appendChild(document.createTextNode(t));if(t)remove(err,'hidden');else add(err,'hidden');}
+}());
