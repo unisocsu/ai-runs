@@ -14,8 +14,8 @@ function validId(value) {
 }
 
 export async function onRequestPost({request, env}) {
-  if (!env.GITHUB_TOKEN || !env.CHAT_ACCESS_KEY || !env.AI_QUEUE) {
-    return json({error: "חסרה הגדרה ב-Cloudflare Pages: GITHUB_TOKEN, CHAT_ACCESS_KEY או AI_QUEUE (KV)."}, 503);
+  if (!env.GITHUB_TOKEN || !env.CHAT_ACCESS_KEY || !env.CHAT_QUEUE_KEY || !env.AI_QUEUE) {
+    return json({error: "חסרה הגדרה ב-Cloudflare Pages: GITHUB_TOKEN, CHAT_ACCESS_KEY, CHAT_QUEUE_KEY או AI_QUEUE (KV)."}, 503);
   }
   let body;
   try { body = await request.json(); } catch { return json({error: "בקשה לא תקינה."}, 400); }
