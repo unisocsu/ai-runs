@@ -69,17 +69,31 @@ class SearchParser(HTMLParser):
             self.results[-1]["snippet"] = self.results[-1].get("snippet", "") + data
 
 def wait_for_server():
-    deadline = time.time() + 180
+    # Loading an 8B GGUF model on a CPU-only runner can take several minutes.
+    timeout_seconds = int(os.environ.get("LLAMA_STARTUP_TIMEOUT", "600"))
+    deadline = time.time() + timeout_seconds
     last_error = None
     while time.time() < deadline:
         try:
             with urlopen(f"{BASE_URL}/health", timeout=5) as response:
                 if response.status == 200:
+                    print("llama-server health check passed.")
                     return
         except (OSError, URLError) as exc:
             last_error = exc
         time.sleep(2)
-    raise RuntimeError(f"llama-server did not become healthy within 180 seconds: {last_error}")
+    log_path = ROOT / ".cache" / "llama-server.log"
+    if log_path.is_file():
+        try:
+            log_tail = "\\n".join(log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-100:])
+        except OSError as exc:
+            log_tail = f"Could not read llama-server log: {exc}"
+    else:
+        log_tail = "llama-server log file was not found."
+    raise RuntimeError(
+        f"llama-server did not become healthy within {timeout_seconds} seconds: {last_error}\\n"
+        f"--- llama-server log (last 100 lines) ---\\n{log_tail}"
+    )
 
 def safe_workspace_path(raw):
     if not isinstance(raw, str) or not raw.strip():
