@@ -14,7 +14,7 @@ This is a starting point for testing. It will not match Claude Sonnet just becau
 
 ## Website chat on Cloudflare Pages
 
-A browser chat interface is available in `public/`, with Pages Functions in `functions/api/` that dispatch and poll GitHub Actions. To publish it, follow [CLOUDFLARE-DEPLOY.md](CLOUDFLARE-DEPLOY.md). Cloudflare Pages can assign a free `*.pages.dev` address. You must configure encrypted `GITHUB_TOKEN` and `CHAT_ACCESS_KEY` secrets in Cloudflare Pages before the chat can start runs.
+A browser chat interface is available in `public/`, with Pages Functions in `functions/api/`. A website chat session starts one GitHub Actions run; the runner keeps the model loaded and polls a Cloudflare KV queue for further messages in that same session. To enable this, follow [CLOUDFLARE-DEPLOY.md](CLOUDFLARE-DEPLOY.md) and configure the `AI_QUEUE` KV binding plus matching `CHAT_QUEUE_KEY` secrets in Cloudflare Pages and GitHub Actions.
 
 The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every run. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached, so a cache hit skips C++ compilation. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
 
@@ -54,7 +54,7 @@ Use **Reset conversation history** in the workflow inputs to start a new convers
 ## Limits
 
 - This uses the standard GitHub-hosted runner, not a 348 GB RAM machine.
-- Standard runners are ephemeral; there is no always-on API or live chat website yet.
+- A website chat reuses one runner/model for up to about five hours per session. After that, the next message starts a new run. Standard runners are ephemeral; there is no permanent always-on inference server.
 - Model downloads and inference can be slow on CPU.
 - GitHub Actions limits, cache limits, model-host availability, and workflow timeouts apply.
 - The repository is public, so saved prompts and answers are public too.
