@@ -21,6 +21,16 @@ on:
         required: true
         type: boolean
         default: false
+      session_id:
+        description: "Website chat session ID (leave blank for a one-off run)"
+        required: false
+        type: string
+        default: ""
+      message_id:
+        description: "Website message ID (leave blank for a one-off run)"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -39,6 +49,10 @@ jobs:
       PROMPT: ${{ inputs.prompt }}
       MAX_TOKENS: ${{ inputs.max_tokens }}
       RESET_HISTORY: ${{ inputs.reset_history }}
+      SESSION_ID: ${{ inputs.session_id }}
+      MESSAGE_ID: ${{ inputs.message_id }}
+      CHAT_QUEUE_KEY: ${{ secrets.CHAT_QUEUE_KEY }}
+      CHAT_QUEUE_URL: https://ai-runs-chat.pages.dev/api/worker
 
     steps:
       - name: Check out repository
@@ -129,8 +143,8 @@ jobs:
             > .cache/llama-server.log 2>&1 &
           echo $! > .cache/llama-server.pid
 
-      - name: Generate answer
-        run: python3 scripts/infer.py
+      - name: Generate answer and keep session alive
+        run: python3 scripts/session_worker.py
 
       - name: Upload agent workspace artifact
         if: always() && hashFiles('agent_workspace/**') != ''
