@@ -2,13 +2,15 @@
 
 A free-first experiment that runs an open-weight language model on the CPU/RAM of a GitHub-hosted runner. It does **not** provide a permanent server: each answer is a separate GitHub Actions run.
 
-## First model
+## Model
 
-- **Model:** Qwen3-8B GGUF, Q4_K_M quantization
+- **Model:** DeepSeek-R1-Distill-Qwen-7B GGUF, Q4_K_M quantization
 - **Runtime:** [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - **Runner:** `ubuntu-latest` (standard hosted runner; RAM is limited and is not configurable here)
-- **Model file:** downloaded from the official [Qwen GGUF repository](https://huggingface.co/Qwen/Qwen3-8B-GGUF)
+- **Model file:** downloaded from [bartowski's DeepSeek GGUF repository](https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF)
 - **Model caching:** disabled; model is downloaded afresh every workflow run
+
+The 7B Q4_K_M file is multi-gigabyte and inference is CPU-only. Actual speed and memory use depend on the hosted runner. DeepSeek-R1 distilled models may produce reasoning-style output and are not guaranteed to outperform the previous model on every task.
 
 This is a starting point for testing. It will not match Claude Sonnet just because it is allowed to think for longer; quality, context size, and speed depend on the model and runner.
 
@@ -20,7 +22,7 @@ The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF
 
 ## Agent tools (first version)
 
-The inference script now runs a bounded agent loop instead of a single text completion. It can:
+The inference script now runs a bounded agent loop instead of a single text completion. The workflow runs only when manually started with **Actions → Run local AI → Run workflow** (`workflow_dispatch`); it has no push or schedule trigger. It can:
 
 - Search the web and inspect returned snippets/links.
 - Create, list, and read files only inside `agent_workspace/`.
@@ -59,13 +61,17 @@ Use **Reset conversation history** in the workflow inputs to start a new convers
 - GitHub Actions limits, cache limits, model-host availability, and workflow timeouts apply.
 - The repository is public, so saved prompts and answers are public too.
 
+## Agent skills
+
+Skills live in `skills/`. The model can call `list_skills` and `read_skill` to load relevant guidance on demand. The Linux kernel security skill is for defensive static review: it asks for evidence-backed findings and proposed fixes, not execution of suspect code. Shell and browser actions run in isolated disposable containers without GitHub credentials.
+
 ## Architecture
 
 ```text
 GitHub Actions workflow_dispatch
         |
         v
-Download Qwen3 GGUF model (every run)
+Download DeepSeek-R1-Distill-Qwen-7B GGUF model (every run)
         |
         v
 Restore compiled llama.cpp build (or compile if missing) -> run llama-server on localhost
@@ -76,6 +82,9 @@ Run bounded agent loop (up to 6 tool calls)
         +--> web search
         +--> list/read/write files in agent_workspace/
         +--> restricted arithmetic calculator
+        +--> isolated Bash container (install tools, compile, test)
+        +--> isolated Playwright/Chromium browser
+        +--> on-demand skills library
         |
         +--> upload agent-workspace and ai-answer artifacts
         +--> commit state/conversation.json and latest-result.md
