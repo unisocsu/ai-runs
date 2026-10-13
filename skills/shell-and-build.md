@@ -1,0 +1,3 @@
+# Shell and build engineering
+
+Use shell commands to inspect files, install ordinary dependencies, compile, and run tests in the disposable container. Prefer repeatable commands and explicit exit-code checks. Keep generated files under agent_workspace when they need to persist. Do not print or search for secrets. Before destructive commands, inspect targets and use the narrowest possible scope. Report command, result, and artifact path.
