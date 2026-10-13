@@ -41,11 +41,11 @@ concurrency:
 
 jobs:
   inference:
-    name: Run Qwen3 with cached llama.cpp compilation
+    name: Run DeepSeek-R1-Distill-Qwen-7B with cached llama.cpp compilation
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
-      MODEL_PATH: .cache/models/Qwen3-8B-Q4_K_M.gguf
+      MODEL_PATH: .cache/models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf
       PROMPT: ${{ inputs.prompt }}
       MAX_TOKENS: ${{ inputs.max_tokens }}
       RESET_HISTORY: ${{ inputs.reset_history }}
@@ -73,7 +73,7 @@ jobs:
           echo "Downloading the model fresh for this run; model cache is disabled."
           curl --location --fail --show-error --retry 5 --retry-all-errors \
             --connect-timeout 30 \
-            "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf?download=true" \
+            "https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf?download=true" \
             --output "$MODEL_PATH"
           test -s "$MODEL_PATH"
           echo "Downloaded model size:"
