@@ -1,0 +1,3 @@
+# Git and GitHub Actions
+
+Prefer minimal workflow changes. Pin or constrain dependencies where practical, set least-privilege permissions, use workflow_dispatch inputs with validation, and never expose secrets to model-generated code or shell containers. Check timeout, concurrency, cache key, artifact retention, and whether a run writes back to the repository. Remember that prompts, logs, artifacts, and commits may be public in public repositories.
