@@ -7,7 +7,7 @@
   function toggle(el,c) { if(has(el,c)) remove(el,c); else add(el,c); }
   function json(s) { try { return JSON.parse(s||'{}'); } catch(e) { return {}; } }
   var API_BASE='https://ai-runs-chat.pages.dev';
-  function readCookie(name){var parts=document.cookie?document.cookie.split(';'):[],i,p;for(i=0;i<parts.length;i++){p=parts[i].replace(/^\\s+/,'');if(p.indexOf(name+'=')===0){try{return decodeURIComponent(p.substring(name.length+1));}catch(e){return '';}}}return '';}
+  function readCookie(name){var parts=document.cookie?document.cookie.split(';'):[],i,p;for(i=0;i<parts.length;i++){p=parts[i].replace(/^\s+/,'');if(p.indexOf(name+'=')===0){try{return decodeURIComponent(p.substring(name.length+1));}catch(e){return '';}}}return '';}
   function writeCookie(name,value,days){var expires=new Date(new Date().getTime()+days*86400000).toUTCString();document.cookie=name+'='+encodeURIComponent(value)+'; expires='+expires+'; path=/; SameSite=Lax'+(window.location.protocol==='https:'?'; Secure':'');}
   function eraseCookie(name){document.cookie=name+'=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'+(window.location.protocol==='https:'?'; Secure':'');}
   var form=id('chat-form'), input=id('prompt'), messages=id('messages'), welcome=id('welcome'), progress=id('progress'), err=id('error'), settings=id('settings'), key=id('access-key'), send=id('send'), busy=false, timer=null, access='', sessionId='';
