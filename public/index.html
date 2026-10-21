@@ -7,7 +7,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="description" content="צ'אט AI ניסיוני המבוסס על מודל פתוח ו-llama.cpp">
   <title>AI Runs Agent — צ'אט עם כלים</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="app-shell">
@@ -30,7 +30,7 @@
       <section id="settings" class="settings hidden">
         <label for="access-key">מפתח גישה לאתר</label>
         <div class="key-row"><input id="access-key" type="password" autocomplete="off" placeholder="הזן את המפתח שסיפקת ב-Cloudflare"><button id="save-key">שמירה</button></div>
-        <small>המפתח נשמר רק בלשונית הנוכחית. מנהל האתר צריך להגדיר את אותו ערך כ-CHAT_ACCESS_KEY ב-Cloudflare Pages.</small>
+        <small>המפתח נשמר בעוגייה בדפדפן למשך 30 יום. זהו מפתח הגישה לאתר, לא GitHub Personal Access Token.</small>
       </section>
       <section id="welcome" class="welcome">
         <div class="hero-symbol">✳</div>
@@ -55,6 +55,6 @@
       </div>
     </main>
   </div>
-  <script src="/app.js" defer></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
