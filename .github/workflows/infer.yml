@@ -51,14 +51,18 @@ jobs:
       RESET_HISTORY: ${{ inputs.reset_history }}
       SESSION_ID: ${{ inputs.session_id }}
       MESSAGE_ID: ${{ inputs.message_id }}
-      CHAT_QUEUE_KEY: ${{ secrets.CHAT_QUEUE_KEY }}
-      CHAT_QUEUE_URL: https://ai-runs-chat.pages.dev/api/worker
+      GH_API_TOKEN: ${{ github.token }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Register website session before model setup
+        env:
+          SESSION_ID: ${{ inputs.session_id }}
+        run: python3 scripts/session_state.py start
 
       - name: Set up system dependencies
         run: |
@@ -146,6 +150,12 @@ jobs:
       - name: Generate answer and keep session alive
         run: python3 scripts/session_worker.py
 
+      - name: Mark website session as finished
+        if: always()
+        env:
+          SESSION_ID: ${{ inputs.session_id }}
+        run: python3 scripts/session_state.py finish
+
       - name: Upload agent workspace artifact
         if: always() && hashFiles('agent_workspace/**') != ''
         uses: actions/upload-artifact@v4
@@ -171,7 +181,7 @@ jobs:
             tail -n 200 .cache/llama-server.log
           fi
 
-      - name: Commit saved conversation and latest answer
+      - name: Commit conversation without losing concurrent JSON requests
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -181,8 +191,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add state/conversation.json latest-result.md latest-answer.txt
           if git diff --cached --quiet; then
-            echo "No state changes to commit."
-          else
-            git commit -m "Save AI conversation result"
-            git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" push
+            echo "No conversation files changed."
+            exit 0
           fi
+          git commit -m "Save AI conversation result"
+          git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" fetch origin main
+          git rebase FETCH_HEAD
+          git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" push origin HEAD:main

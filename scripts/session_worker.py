@@ -1,85 +1,76 @@
 #!/usr/bin/env python3
-"""Keep one GitHub Actions runner/model alive for multiple messages in a chat session."""
-import json
+"""Run one model instance and poll the repository-backed JSON queue."""
 import os
 import sys
 import time
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
-
 import infer
+import session_store as store
 
-BASE = os.environ.get("CHAT_QUEUE_URL", "https://ai-runs-chat.pages.dev/api/worker").rstrip("/")
-KEY = os.environ.get("CHAT_QUEUE_KEY", "")
 SESSION_ID = os.environ.get("SESSION_ID", "")
 MESSAGE_ID = os.environ.get("MESSAGE_ID", "")
+POLL_SECONDS = 8
 
-def call(method, payload=None, query=""):
-    url = BASE + query
-    data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = Request(url, data=data, method=method, headers={
-        "Content-Type": "application/json",
-        "X-Worker-Key": KEY,
-        "User-Agent": "ai-runs-session-worker/1.0",
-    })
-    with urlopen(request, timeout=20) as response:
-        return json.loads(response.read().decode("utf-8"))
+def publish(message_id, payload):
+    payload.update({"messageId": message_id, "sessionId": SESSION_ID})
+    store.write_json("runtime/results/" + message_id + ".json", payload)
 
-def process(message_id, prompt, max_tokens):
+def process(message_id, prompt, max_tokens, reset_history=False):
     os.environ["PROMPT"] = prompt
     os.environ["MAX_TOKENS"] = str(max_tokens)
-    os.environ["RESET_HISTORY"] = "false"
+    os.environ["RESET_HISTORY"] = "true" if reset_history else "false"
     try:
         code = infer.main()
         answer_path = infer.ANSWER_PATH
         answer = answer_path.read_text(encoding="utf-8").strip() if answer_path.exists() else ""
         if code != 0 or not answer:
             raise RuntimeError("infer.py did not produce an answer (exit code %s)." % code)
-        call("POST", {"action": "result", "sessionId": SESSION_ID,
-                      "messageId": message_id, "answer": answer})
+        publish(message_id, {"status":"completed","conclusion":"success","answer":answer,
+          "updatedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         print("Published response for message " + message_id)
     except Exception as exc:
         print("Message failed: %s" % exc, file=sys.stderr)
         try:
-            call("POST", {"action": "failure", "sessionId": SESSION_ID,
-                          "messageId": message_id, "error": str(exc)})
+            publish(message_id, {"status":"completed","conclusion":"failure","error":str(exc),
+              "updatedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         except Exception as report_exc:
-            print("Could not report failure: %s" % report_exc, file=sys.stderr)
+            print("Could not publish failure: %s" % report_exc, file=sys.stderr)
 
 def main():
-    # Preserve manual workflow runs that do not originate from the website.
-    if not (KEY and SESSION_ID and MESSAGE_ID):
+    if not (SESSION_ID and MESSAGE_ID and os.environ.get("GH_API_TOKEN")):
         return infer.main()
     initial_prompt = os.environ.get("PROMPT", "").strip()
     if not initial_prompt:
         raise RuntimeError("Initial prompt is empty.")
     max_tokens = int(os.environ.get("MAX_TOKENS", "512"))
-    process(MESSAGE_ID, initial_prompt, max_tokens)
-
-    # The model server remains running while this loop waits for messages.
-    # Stop before the workflow's 350-minute hard timeout to allow cleanup/commit.
+    reset_history = os.environ.get("RESET_HISTORY", "false").lower() == "true"
+    process(MESSAGE_ID, initial_prompt, max_tokens, reset_history)
     deadline = time.monotonic() + 5 * 60 * 60
-    idle_seconds = 0
+    seen_ids = {MESSAGE_ID}
+    queue_dir = "runtime/queue/" + SESSION_ID
     while time.monotonic() < deadline:
         try:
-            result = call("GET", query="?sessionId=" + SESSION_ID)
-            if result.get("action") == "message":
-                item = result.get("item") or {}
-                message_id = item.get("messageId")
-                prompt = item.get("prompt")
-                if isinstance(message_id, str) and isinstance(prompt, str) and prompt.strip():
-                    process(message_id, prompt, item.get("max_tokens", 512))
-                    idle_seconds = 0
+            waiting = []
+            for path in store.list_json_paths(queue_dir):
+                queued_id = path.rsplit("/", 1)[-1][:-5]
+                if not queued_id or queued_id in seen_ids:
                     continue
-            time.sleep(8)
-            idle_seconds += 8
-        except (HTTPError, URLError, TimeoutError, ValueError) as exc:
-            print("Queue poll failed; retrying: %s" % exc, file=sys.stderr)
+                seen_ids.add(queued_id)
+                item, _ = store.read_json(path)
+                if not isinstance(item, dict):
+                    continue
+                prompt = item.get("prompt")
+                if isinstance(prompt, str) and prompt.strip():
+                    waiting.append((item.get("createdAt", ""), queued_id, item))
+            waiting.sort(key=lambda entry: entry[0])
+            if waiting:
+                for _, queued_id, item in waiting:
+                    process(queued_id, item["prompt"], int(item.get("max_tokens",512)), bool(item.get("reset_history",False)))
+                continue
+            time.sleep(POLL_SECONDS)
+        except Exception as exc:
+            print("Repository queue poll failed; retrying: %s" % exc, file=sys.stderr)
             time.sleep(10)
-    try:
-        call("POST", {"action": "finish", "sessionId": SESSION_ID})
-    except Exception as exc:
-        print("Could not mark session finished: %s" % exc, file=sys.stderr)
+    store.update_session(SESSION_ID, "finished", {"finishedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())})
     print("Session worker reached its planned time limit.")
     return 0
 
