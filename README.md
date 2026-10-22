@@ -1,6 +1,6 @@
-# AI Runs — local LLM on GitHub Actions
+# AI Runs — GitHub Pages chat backed by GitHub Actions
 
-A free-first experiment that runs an open-weight language model on the CPU/RAM of a GitHub-hosted runner. It does **not** provide a permanent server: each answer is a separate GitHub Actions run.
+A static GitHub Pages chat that writes message and result JSON files directly to this repository through the GitHub REST API. When no worker session is active, the page dispatches one GitHub Actions workflow. While the model runner is active, later messages are written to a repository-backed JSON queue and handled by that same run.
 
 ## Model
 
@@ -14,11 +14,15 @@ The 7B Q4_K_M file is multi-gigabyte and inference is CPU-only. Actual speed and
 
 This is a starting point for testing. It will not match Claude Sonnet just because it is allowed to think for longer; quality, context size, and speed depend on the model and runner.
 
-## Website chat on Cloudflare Pages
+## Website chat on GitHub Pages
 
-A browser chat interface is available in `public/`, with Pages Functions in `functions/api/`. A website chat session starts one GitHub Actions run; the runner keeps the model loaded and polls a Cloudflare KV queue for further messages in that same session. To enable this, follow [CLOUDFLARE-DEPLOY.md](CLOUDFLARE-DEPLOY.md) and configure the `AI_QUEUE` KV binding plus matching `CHAT_QUEUE_KEY` secrets in Cloudflare Pages and GitHub Actions.
+The chat UI is in `public/`. The browser reads `runtime/session.json` and writes request files under `runtime/queue/<session-id>/` and result files under `runtime/results/` by calling the GitHub REST API directly. It does not call the old Cloudflare Pages Functions. If the session registry is active, a message only creates JSON files; it does not dispatch another workflow. If no active session exists, the page writes a new session registry and invokes `infer.yml`.
 
-The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every run. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached, so a cache hit skips C++ compilation. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
+Enter a fine-grained GitHub token limited to this repository with **Contents: Read and write** and **Actions: Read and write** permissions. The browser sends it directly to `api.github.com` and stores it in a browser cookie for 30 days. Do not commit a token or use a broad-scope token. The repository is public, so queue JSON, prompts, results and saved conversation files are public too; do not send confidential data.
+
+The worker loads the model once and polls the repository-backed JSON queue for up to five hours. Each completed response is written to `runtime/results/<message-id>.json`. The workflow fetches full Git history and rebases the saved conversation commit on the latest `main` so it does not discard JSON commits created while inference was running.
+
+The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every session start. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
 
 ## Agent tools (first version)
 
