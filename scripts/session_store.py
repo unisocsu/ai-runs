@@ -42,17 +42,22 @@ def read_json(path):
     except (ValueError, UnicodeDecodeError) as exc:
         raise RuntimeError("Invalid JSON file in repository: " + path) from exc
 
-def write_json(path, value, attempts=5):
+def write_json(path, value, attempts=5, expected_sha=None):
     url = "/contents/" + quote(path, safe="/")
     for attempt in range(attempts):
-        _, sha = read_json(path)
+        if expected_sha is None:
+            _, sha = read_json(path)
+        else:
+            sha = expected_sha
         body = {"message": "AI Runs queue: update " + path,
                 "content": base64.b64encode(json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")).decode("ascii"),
                 "branch": BRANCH}
         if sha: body["sha"] = sha
         status, response = api("PUT", url, body)
         if status in (200, 201): return response
-        if status in (409, 422): time.sleep(0.25 * (attempt + 1)); continue
+        if status in (409, 422):
+            if expected_sha is not None: return None
+            time.sleep(0.25 * (attempt + 1)); continue
     raise RuntimeError("Could not write " + path + " after repeated GitHub conflicts.")
 
 def list_json_paths(directory):
@@ -64,11 +69,16 @@ def list_json_paths(directory):
 
 def update_session(session_id, status, extra=None):
     if not session_id: return
-    current, _ = read_json("runtime/session.json")
-    if not current or current.get("sessionId") != session_id:
-        print("Session registry no longer belongs to this workflow; not overwriting it.")
-        return
-    current["status"] = status
-    current["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    if extra: current.update(extra)
-    write_json("runtime/session.json", current)
+    for attempt in range(5):
+        current, sha = read_json("runtime/session.json")
+        if not current or current.get("sessionId") != session_id:
+            print("Session registry no longer belongs to this workflow; not overwriting it.")
+            return
+        updated = dict(current)
+        updated["status"] = status
+        updated["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if extra: updated.update(extra)
+        result = write_json("runtime/session.json", updated, expected_sha=sha)
+        if result is not None: return
+        time.sleep(0.25 * (attempt + 1))
+    raise RuntimeError("Could not safely update the active session registry.")
