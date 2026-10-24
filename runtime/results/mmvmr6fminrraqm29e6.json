@@ -1,6 +1,8 @@
 {
-  "status": "queued",
-  "sessionId": "smvmoh7pijpi6fhug86",
+  "status": "completed",
+  "conclusion": "failure",
+  "error": "The model returned an empty response.",
+  "updatedAt": "2026-10-24T18:51:00Z",
   "messageId": "mmvmr6fminrraqm29e6",
-  "createdAt": "2026-10-24T18:49:30.294Z"
+  "sessionId": "smvmoh7pijpi6fhug86"
 }
