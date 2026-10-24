@@ -41,11 +41,11 @@ concurrency:
 
 jobs:
   inference:
-    name: Run DeepSeek-R1-Distill-Qwen-7B with cached llama.cpp compilation
+    name: Run Qwen3-4B-Instruct-2507 with four CPU threads
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
-      MODEL_PATH: .cache/models/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf
+      MODEL_PATH: .cache/models/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
       PROMPT: ${{ inputs.prompt }}
       MAX_TOKENS: ${{ inputs.max_tokens }}
       RESET_HISTORY: ${{ inputs.reset_history }}
@@ -75,10 +75,10 @@ jobs:
           set -euo pipefail
           mkdir -p .cache/models
           rm -f "$MODEL_PATH"
-          echo "Downloading the model fresh for this run; model cache is disabled."
+          echo "Downloading Qwen3-4B-Instruct-2507 (Q4_K_M) fresh for this run; model cache is disabled."
           curl --location --fail --show-error --retry 5 --retry-all-errors \
             --connect-timeout 30 \
-            "https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf?download=true" \
+            "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf?download=true" \
             --output "$MODEL_PATH"
           test -s "$MODEL_PATH"
           echo "Downloaded model size:"
@@ -135,6 +135,16 @@ jobs:
           path: .cache/llama.cpp-build
           key: llama-cpp-build-only-ubuntu-x64-v2
 
+      - name: Verify four CPU workers are available
+        run: |
+          set -euo pipefail
+          echo "Logical CPUs available to this workflow: $(nproc)"
+          lscpu
+          if [ "$(nproc)" -lt 4 ]; then
+            echo "::error::This runner exposes fewer than four CPUs; refusing to run with reduced CPU capacity."
+            exit 1
+          fi
+
       - name: Start local model server
         run: |
           set -euo pipefail
@@ -144,6 +154,7 @@ jobs:
             --port 8080 \
             --ctx-size 8192 \
             --threads 4 \
+            --threads-batch 4 \
             --no-webui \
             > .cache/llama-server.log 2>&1 &
           echo $! > .cache/llama-server.pid
