@@ -1,6 +1,8 @@
 {
-  "status": "queued",
-  "sessionId": "smvmoh7pijpi6fhug86",
+  "status": "completed",
+  "conclusion": "success",
+  "answer": "הגעתי למגבלת הצעדים של הסוכן. הנה המידע שהצלחתי לאסוף עד כה.",
+  "updatedAt": "2026-10-24T18:27:06Z",
   "messageId": "mmvmqanurevu5knuuwt",
-  "createdAt": "2026-10-24T18:24:46.473Z"
+  "sessionId": "smvmoh7pijpi6fhug86"
 }
