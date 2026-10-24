@@ -1,12 +1,7 @@
 {
-  "sessionId": "smvmrtghkxjqrchggpp",
-  "status": "finished",
-  "createdAt": "2026-10-24T19:07:22.424Z",
-  "updatedAt": "2026-10-24T19:10:06Z",
-  "expiresAt": "2026-10-25T01:09:19Z",
-  "run_id": "40123848329",
-  "run_number": "15",
-  "run_url": "https://github.com/unisocsu/ai-runs/actions/runs/40123848329",
-  "startedAt": "2026-10-24T19:09:19Z",
-  "finishedAt": "2026-10-24T19:10:05Z"
+  "sessionId": "smvms5u9iag00c5swko",
+  "status": "starting",
+  "createdAt": "2026-10-24T19:17:00.150Z",
+  "updatedAt": "2026-10-24T19:17:00.150Z",
+  "expiresAt": "2026-10-25T01:17:00.150Z"
 }
