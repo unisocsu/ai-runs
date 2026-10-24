@@ -78,7 +78,7 @@ jobs:
           echo "Downloading Qwen3-4B-Instruct-2507 (Q4_K_M) fresh for this run; model cache is disabled."
           python3 -m venv .cache/hf-venv
           .cache/hf-venv/bin/python -m pip install --disable-pip-version-check --quiet huggingface_hub
-          .cache/hf-venv/bin/hf download bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF \
+          .cache/hf-venv/bin/hf download unsloth/Qwen3-4B-Instruct-2507-GGUF \
             Qwen3-4B-Instruct-2507-Q4_K_M.gguf \
             --local-dir .cache/models
           test -s "$MODEL_PATH"
