@@ -40,7 +40,7 @@ Available tools:
 7) {"tool":"browser","args":{"url":"https://example.com","actions":[{"type":"text"},{"type":"screenshot","path":"page.png"}]}}
 8) {"tool":"list_skills","args":{}}
 9) {"tool":"read_skill","args":{"name":"linux-kernel-security"}}
-Use run_bash for shell commands, installing packages, downloading files, compiling projects, and tests. It runs inside a disposable Docker container with internet access and only agent_workspace/ mounted. It has a 180-second command timeout, 1 GB memory limit, 2 CPU limit, and output capped at 12 KB.
+Use run_bash for shell commands, installing packages, downloading files, compiling projects, and tests. It runs inside a disposable Docker container with internet access and only agent_workspace/ mounted. It has a 180-second command timeout, 1 GB memory limit, 4 CPU limit, and output capped at 12 KB.
 Use browser for controlled headless Chromium automation. Supported actions: goto (url), click (selector), fill (selector,value), press (selector,key), wait (ms up to 10000), text (optional selector), screenshot (relative path under agent_workspace/). Browser state is temporary per call; save screenshots or downloaded outputs to agent_workspace/ when needed.
 Use skills when relevant; inspect the relevant skill before doing complex work. Skills are guidance, not proof. For Linux-kernel security review, perform static inspection only: identify suspicious code paths and propose patches; never run the suspect kernel code or produce weaponized exploit steps.
 When a tool is needed, return exactly one JSON object with "tool" and "args". After receiving the tool result, continue. When finished, return {"final":"your complete answer"}.
@@ -186,7 +186,7 @@ def run_bash(command):
         "--network", "bridge",
         "--memory", "1g",
         "--memory-swap", "1g",
-        "--cpus", "2",
+        "--cpus", "4",
         "--pids-limit", "256",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges",
@@ -288,7 +288,7 @@ print(json.dumps(out,ensure_ascii=False))
 '''
     command = [
         "docker", "run", "--rm", "-i", "--network", "bridge",
-        "--memory", "1g", "--memory-swap", "1g", "--cpus", "2",
+        "--memory", "1g", "--memory-swap", "1g", "--cpus", "4",
         "--pids-limit", "256", "--cap-drop=ALL", "--security-opt=no-new-privileges",
         "--volume", f"{WORKSPACE}:/workspace", "--workdir", "/workspace",
         "mcr.microsoft.com/playwright/python:v1.52.0-noble",
@@ -509,7 +509,7 @@ def main():
     RESULT_PATH.write_text(
         "# Latest AI agent result\n\n"
         f"- Generated at: {now}\n"
-        "- Model: DeepSeek-R1-Distill-Qwen-7B GGUF (Q4_K_M) via llama.cpp\n"
+        "- Model: Qwen3-4B-Instruct-2507 GGUF (Q4_K_M) via llama.cpp\n"
         f"- Tool calls: {tool_count}/{MAX_STEPS}\n\n"
         "## Task\n\n" + prompt + "\n\n## Result\n\n" + answer + "\n",
         encoding="utf-8")
