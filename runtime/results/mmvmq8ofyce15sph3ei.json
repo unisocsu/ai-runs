@@ -1,6 +1,8 @@
 {
-  "status": "queued",
-  "sessionId": "smvmoh7pijpi6fhug86",
+  "status": "completed",
+  "conclusion": "success",
+  "answer": "היי! 😊 איך אני יכול לעזור לך היום?",
+  "updatedAt": "2026-10-24T18:23:52Z",
   "messageId": "mmvmq8ofyce15sph3ei",
-  "createdAt": "2026-10-24T18:23:14.196Z"
+  "sessionId": "smvmoh7pijpi6fhug86"
 }
