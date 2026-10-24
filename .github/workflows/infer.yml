@@ -76,10 +76,11 @@ jobs:
           mkdir -p .cache/models
           rm -f "$MODEL_PATH"
           echo "Downloading Qwen3-4B-Instruct-2507 (Q4_K_M) fresh for this run; model cache is disabled."
-          curl --location --fail --show-error --retry 5 --retry-all-errors \
-            --connect-timeout 30 \
-            "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf" \
-            --output "$MODEL_PATH"
+          python3 -m venv .cache/hf-venv
+          .cache/hf-venv/bin/python -m pip install --disable-pip-version-check --quiet huggingface_hub
+          .cache/hf-venv/bin/hf download bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF \
+            Qwen3-4B-Instruct-2507-Q4_K_M.gguf \
+            --local-dir .cache/models
           test -s "$MODEL_PATH"
           echo "Downloaded model size:"
           du -h "$MODEL_PATH"
