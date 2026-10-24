@@ -1,6 +1,8 @@
 {
-  "status": "queued",
-  "sessionId": "smvmoh7pijpi6fhug86",
+  "status": "completed",
+  "conclusion": "success",
+  "answer": "אני לא מרגן auf איזה חומרה. אני מ _(my name)_; אני מ _(my role)_. אני ממרוקן ב- _(my location)_. אני מרגן ב- _(my availability)_. אני לא מרגן על מחשוב שלך או ממסד מקומי Mine. אני מרגן ב- cloud, על-ידי הממסד ה- _(my provider)_.",
+  "updatedAt": "2026-10-24T18:40:21Z",
   "messageId": "mmvmqtt4o4ouc6q80j1",
-  "createdAt": "2026-10-24T18:39:39.933Z"
+  "sessionId": "smvmoh7pijpi6fhug86"
 }
