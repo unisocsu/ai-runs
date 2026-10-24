@@ -4,13 +4,13 @@ A static GitHub Pages chat that writes message and result JSON files directly to
 
 ## Model
 
-- **Model:** DeepSeek-R1-Distill-Qwen-7B GGUF, Q4_K_M quantization
+- **Model:** Qwen3-4B-Instruct-2507 GGUF, Q4_K_M quantization (~2.5 GB)
 - **Runtime:** [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - **Runner:** `ubuntu-latest` (standard hosted runner; RAM is limited and is not configurable here)
-- **Model file:** downloaded from [bartowski's DeepSeek GGUF repository](https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF)
+- **Model file:** downloaded from [bartowski's Qwen3-4B-Instruct-2507 GGUF repository](https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF)
 - **Model caching:** disabled; model is downloaded afresh every workflow run
 
-The 7B Q4_K_M file is multi-gigabyte and inference is CPU-only. Actual speed and memory use depend on the hosted runner. DeepSeek-R1 distilled models may produce reasoning-style output and are not guaranteed to outperform the previous model on every task.
+The Q4_K_M file is about 2.5 GB and inference is CPU-only. Qwen3-4B-Instruct-2507 is smaller than the previous 7B model and should reduce model download and load time; actual generation speed and answer quality depend on the task and hosted runner.
 
 This is a starting point for testing. It will not match Claude Sonnet just because it is allowed to think for longer; quality, context size, and speed depend on the model and runner.
 
@@ -22,18 +22,18 @@ Enter a fine-grained GitHub token limited to this repository with **Contents: Re
 
 The worker loads the model once and polls the repository-backed JSON queue for up to five hours. Each completed response is written to `runtime/results/<message-id>.json`. The workflow fetches full Git history and rebases the saved conversation commit on the latest `main` so it does not discard JSON commits created while inference was running.
 
-The workflow does not cache the model. It downloads the multi-gigabyte Qwen GGUF file on every session start. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
+The workflow does not cache the model. It downloads the ~2.5 GB Qwen3-4B-Instruct-2507 GGUF file on every session start. Only the `llama.cpp` CMake build directory (including the compiled `llama-server`) is cached. The llama.cpp source is cloned each run. GitHub may evict caches, so a rebuild can still be needed.
 
 ## Agent tools (first version)
 
-The inference script now runs a bounded agent loop instead of a single text completion. The workflow runs only when manually started with **Actions → Run local AI → Run workflow** (`workflow_dispatch`); it has no push or schedule trigger. It can:
+The inference script now runs a bounded agent loop instead of a single text completion. The workflow runs only when manually started with **Actions → Run local AI → Run workflow** (`workflow_dispatch`); it has no push or schedule trigger. Because this is a public repository, `ubuntu-latest` provides a 4-vCPU runner; the workflow checks that at least four logical CPUs are visible and configures `llama-server` with `--threads 4 --threads-batch 4`. It can:
 
 - Search the web and inspect returned snippets/links.
 - Create, list, and read files only inside `agent_workspace/`.
 - Calculate arithmetic using a restricted expression parser.
 - Run Bash commands in a disposable Ubuntu Docker container, including shell pipelines, scripts, downloads, package installation, compilation, and tests.
 - The container has internet access and only `agent_workspace/` mounted from the runner. Its filesystem is discarded after each command; the mounted workspace persists and is uploaded as the `agent-workspace` artifact.
-- Each Bash call has a 180-second timeout, 1 GB memory limit, 2 CPU limit, 256-process limit, and output capped at 12 KB.
+- Each Bash call has a 180-second timeout, 1 GB memory limit, 4 CPU limit, 256-process limit, and output capped at 12 KB.
 - Keep GitHub write credentials out of the agent environment; the workflow only exposes its token to the final fixed commit/push step.
 - Make up to 6 tool calls per request, then produce a final response.
 - Upload generated workspace files as the `agent-workspace` artifact.
@@ -49,7 +49,7 @@ This is a much more capable shell, but not literally unlimited: each command has
 5. Wait for the run to finish.
 6. Open the run's **Artifacts** section to download `ai-answer`; the latest answer is also committed to `latest-result.md`.
 
-Every run downloads a multi-gigabyte model. The compiled `llama.cpp` build is reused when its cache is available; otherwise it must be rebuilt.
+Every new session downloads the ~2.5 GB model. The compiled `llama.cpp` build is reused when its cache is available; otherwise it must be rebuilt.
 
 ## Conversation history and privacy
 
@@ -75,7 +75,7 @@ Skills live in `skills/`. The model can call `list_skills` and `read_skill` to l
 GitHub Actions workflow_dispatch
         |
         v
-Download DeepSeek-R1-Distill-Qwen-7B GGUF model (every run)
+Download Qwen3-4B-Instruct-2507 GGUF model (every new session)
         |
         v
 Restore compiled llama.cpp build (or compile if missing) -> run llama-server on localhost
