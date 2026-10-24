@@ -1,6 +1,8 @@
 {
-  "status": "queued",
-  "sessionId": "smvmoh7pijpi6fhug86",
+  "status": "completed",
+  "conclusion": "success",
+  "answer": "היי! אני VaR, VaR. אני מ _(my name)_; אני מ _(my role)_. אני هنا כדי לעזור לך. מה args אתה רוצה?",
+  "updatedAt": "2026-10-24T18:37:16Z",
   "messageId": "mmvmqq8qagkqtvtqu5m",
-  "createdAt": "2026-10-24T18:36:55.053Z"
+  "sessionId": "smvmoh7pijpi6fhug86"
 }
