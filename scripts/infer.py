@@ -373,34 +373,67 @@ def read_state(reset):
     except (OSError, json.JSONDecodeError, AttributeError, TypeError):
         return [{"role": "system", "content": SYSTEM_PROMPT}]
 
-def chat(messages, max_tokens):
-    payload = json.dumps({
+def _request_chat_completion(messages, max_tokens, json_mode):
+    payload_data = {
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": 0.2,
         "top_p": 0.9,
         "stream": False,
-        "response_format": {"type": "json_object"},
-    }).encode("utf-8")
+    }
+    # JSON mode can occasionally consume the whole output budget on a reasoning model.
+    # Keep it as the first attempt for tool-call consistency, but retry without it if
+    # the server returns an empty message.
+    if json_mode:
+        payload_data["response_format"] = {"type": "json_object"}
+    payload = json.dumps(payload_data).encode("utf-8")
     request = Request(f"{BASE_URL}/v1/chat/completions", data=payload,
                       headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urlopen(request, timeout=6 * 60 * 60) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         details = exc.read().decode("utf-8", errors="replace")[:3000]
         raise RuntimeError(f"llama-server returned HTTP {exc.code}: {details}") from exc
     except URLError as exc:
         raise RuntimeError(f"Could not connect to llama-server: {exc}") from exc
-    try:
-        answer = result["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError(f"Unexpected response from llama-server: {result}") from exc
-    if isinstance(answer, list):
-        answer = "".join(item.get("text", "") if isinstance(item, dict) else str(item) for item in answer)
-    if not isinstance(answer, str) or not answer.strip():
-        raise RuntimeError("The model returned an empty response.")
-    return answer.strip()
+
+def chat(messages, max_tokens):
+    attempts = [
+        (max_tokens, True),
+        (min(max(max_tokens * 2, 1024), 2048), False),
+    ]
+    last_diagnostic = "no response metadata"
+    for attempt_number, (token_budget, json_mode) in enumerate(attempts, start=1):
+        result = _request_chat_completion(messages, token_budget, json_mode)
+        try:
+            choice = result["choices"][0]
+            message = choice.get("message") or {}
+            answer = message.get("content")
+        except (KeyError, IndexError, TypeError, AttributeError) as exc:
+            raise RuntimeError(f"Unexpected response from llama-server: {result}") from exc
+        if isinstance(answer, list):
+            answer = "".join(item.get("text", "") if isinstance(item, dict) else str(item) for item in answer)
+        if isinstance(answer, str) and answer.strip():
+            if attempt_number > 1:
+                print(f"Recovered from empty model output on retry (max_tokens={token_budget}, json_mode={json_mode}).")
+            return answer.strip()
+        reasoning = message.get("reasoning_content")
+        reasoning_chars = len(reasoning) if isinstance(reasoning, str) else 0
+        last_diagnostic = (
+            f"finish_reason={choice.get('finish_reason')!r}, "
+            f"reasoning_chars={reasoning_chars}, "
+            f"message_keys={sorted(message.keys())}, usage={result.get('usage')!r}"
+        )
+        print(
+            f"Empty content from llama-server on attempt {attempt_number}/{len(attempts)}: {last_diagnostic}",
+            file=sys.stderr,
+        )
+    raise RuntimeError(
+        "llama-server returned empty message content after a retry. "
+        + last_diagnostic
+        + ". Try a shorter prompt or reset the conversation if this repeats."
+    )
 
 def parse_agent_json(text):
     text = text.strip()
